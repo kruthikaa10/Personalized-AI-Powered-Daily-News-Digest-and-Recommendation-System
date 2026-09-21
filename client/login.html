@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 4rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .auth-container h2 { text-align: center; margin-bottom: 1.5rem; }
+        .auth-container input { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        .auth-container button { width: 100%; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav><a href="register.html">Register</a></nav>
+    </header>
+    <div class="auth-container">
+        <h2>Login</h2>
+        <div id="error" class="error-msg"></div>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+    <script src="js/api.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await loginUser({ email, password });
+            if (res.success) {
+                setToken(res.token);
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('error').innerText = res.message;
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,166 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><title>Documentation</title>
+<style>
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 11pt;
+  }
+  h1 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 12pt;
+  }
+  h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+  }
+  p, li {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<h1>Personalized AI-Powered Daily News Digest and Recommendation System – Documentation</h1>
+
+<h2>1. Abstract</h2>
+<p>The "Personalized AI-Powered Daily News Digest and Recommendation System" is a comprehensive full-stack web application designed to curate, summarize, and deliver personalized news content. It acts as an intelligent news aggregator that leverages Google's Gemini AI to generate concise summaries, key takeaways, and translations, ensuring users stay informed without suffering from information overload.</p>
+
+<h2>2. Introduction</h2>
+<p>In today's fast-paced digital era, consuming news can be overwhelming due to the sheer volume of articles and clickbait headlines. This project automates the curation process, delivering a tailored reading experience based on individual user preferences, past reading history, and interactions.</p>
+
+<h2>3. Problem Statement</h2>
+<p>Currently, readers rely on generic news aggregators or social media feeds. This leads to issues such as information overload, time wasted reading lengthy articles with low value, lack of multi-language accessibility for regional readers, and disorganized reading habits with no way to track personal reading analytics.</p>
+
+<h2>4. Existing System</h2>
+<ul>
+<li>Relies on manual browsing of multiple news sites.</li>
+<li>Provides generic, non-personalized news feeds to all users.</li>
+<li>Lacks integrated, real-time AI summarization.</li>
+<li>Does not offer seamless, on-the-fly multi-language translation or text-to-speech accessibility features.</li>
+</ul>
+
+<h2>5. Proposed System</h2>
+<p>The proposed web application provides an automated, AI-driven solution where:</p>
+<ul>
+<li>The system automatically fetches global news and curates it based on user interests.</li>
+<li>Google Gemini AI generates 3-5 sentence summaries, bulleted key takeaways, and insights on why the article matters.</li>
+<li>A smart recommendation engine actively scores and ranks articles using past reading behavior.</li>
+<li>Real-time translations (Tamil, Hindi) and Text-to-Speech (Read Aloud) functionalities are built directly into the reading experience.</li>
+</ul>
+
+<h2>6. Objectives</h2>
+<ul>
+<li>To eliminate information overload by summarizing long articles.</li>
+<li>To provide a highly personalized and categorized daily news digest.</li>
+<li>To ensure accessibility through multi-language AI translations and Text-to-Speech.</li>
+<li>To securely manage user profiles, reading history, and analytics data.</li>
+</ul>
+
+<h2>7. Scope</h2>
+<p>The system is built for use by daily news readers seeking curated content. It covers the entire lifecycle from user onboarding and preference selection to reading analytics tracking and automated background digest generation.</p>
+
+<h2>8. Hardware Requirements</h2>
+<ul>
+<li><strong>Processor:</strong> Intel Core i3 or higher / Apple Silicon</li>
+<li><strong>RAM:</strong> 4 GB minimum</li>
+<li><strong>Storage:</strong> 256 GB SSD/HDD</li>
+<li><strong>Network:</strong> Active high-speed internet connection</li>
+</ul>
+
+<h2>9. Software Requirements</h2>
+<ul>
+<li><strong>Operating System:</strong> Windows 10/11 / Linux / macOS</li>
+<li><strong>Browser:</strong> Google Chrome, Microsoft Edge, Firefox, Safari</li>
+<li><strong>Database:</strong> Microsoft SQL Server (MSSQL)</li>
+<li><strong>Server Environment:</strong> Node.js</li>
+</ul>
+
+<h2>10. Technology Used</h2>
+<ul>
+<li><strong>Frontend:</strong> HTML5, CSS3, Vanilla JavaScript</li>
+<li><strong>Backend:</strong> Node.js, Express.js, node-cron</li>
+<li><strong>Database:</strong> MS SQL Server (via <code>mssql</code> driver over TCP/IP)</li>
+<li><strong>External APIs:</strong> NewsAPI (for fetching articles), Google Gemini API (for AI generation)</li>
+<li><strong>Security:</strong> bcrypt (Password Hashing), jsonwebtoken (JWT Auth)</li>
+</ul>
+
+<h2>11. System Architecture</h2>
+<p>Client-Server Architecture. The frontend communicates with the backend Express.js server via RESTful APIs using the <code>fetch()</code> method. The backend processes the business logic, fetches data from external APIs, caches AI responses to reduce costs, and securely queries the MS SQL Server database.</p>
+
+<h2>12. Module Description</h2>
+<ul>
+<li><strong>Authentication Module:</strong> Secure registration, login with JWT, and profile management (including language preferences).</li>
+<li><strong>AI Service Module:</strong> Wrapper for Gemini 3.6 Flash API to handle summaries, takeaways, insights, and translations.</li>
+<li><strong>Recommendation Module:</strong> A scoring engine that ranks articles based on matching categories, reading history, likes, and recency.</li>
+<li><strong>Digest Module:</strong> A background cron job that structures daily news into categorized buckets (Top Stories, Interests, Recommended) and saves them as JSON.</li>
+<li><strong>Analytics Module:</strong> Calculates and serves personal reading statistics and category distribution charts.</li>
+</ul>
+
+<h2>13. Database Design</h2>
+<p>The database <code>PersonalizedNews</code> is heavily normalized to securely cache AI outputs and track user data. Key tables include: <code>Users</code>, <code>UserPreferences</code>, <code>Articles</code>, <code>Bookmarks</code>, <code>ArticleLikes</code>, <code>ReadingHistory</code>, <code>DailyDigests</code>, <code>ArticleSummaries</code>, <code>ArticleKeyTakeaways</code>, <code>ArticleInsights</code>, <code>ArticleTranslations</code>.</p>
+
+<h2>14. ER Diagram (Textual Representation)</h2>
+<ul>
+<li><code>Users</code> (1) --- (M) <code>UserPreferences</code></li>
+<li><code>Users</code> (1) --- (M) <code>ReadingHistory</code> / <code>ArticleLikes</code> / <code>Bookmarks</code></li>
+<li><code>Users</code> (1) --- (M) <code>DailyDigests</code></li>
+<li><code>Articles</code> (1) --- (1) <code>ArticleSummaries</code> / <code>ArticleKeyTakeaways</code> / <code>ArticleInsights</code></li>
+<li><code>Articles</code> (1) --- (M) <code>ArticleTranslations</code></li>
+</ul>
+
+<h2>15. Implementation</h2>
+<p>Developed using Node.js for backend scripting and Vanilla JS for frontend DOM manipulation. Environment variables (<code>.env</code>) protect database credentials and API keys. To ensure high performance and lower API costs, all AI-generated content is heavily cached in the MSSQL database upon first generation.</p>
+
+<h2>16. Testing</h2>
+<ul>
+<li><strong>Unit Testing:</strong> Individual API endpoints and AI prompt generation logic tested.</li>
+<li><strong>Integration Testing:</strong> Frontend <code>fetch</code> calls successfully interacting with the backend and DB cache.</li>
+<li><strong>Validation Testing:</strong> Recommendation engine successfully assigns correct point weights (+5, +4, +3, +2) based on user interaction criteria.</li>
+</ul>
+
+<h2>17. Advantages</h2>
+<ul>
+<li>Significant reading time saved via AI summaries.</li>
+<li>Eco-system is highly personalized to the user's specific tastes.</li>
+<li>Multi-lingual and Text-to-Speech support improves accessibility.</li>
+<li>Cost-efficient architecture due to robust database caching of AI calls.</li>
+</ul>
+
+<h2>18. Limitations</h2>
+<ul>
+<li>Highly dependent on third-party APIs (NewsAPI and Google Gemini); rate limits or downtime on those services affect the app.</li>
+<li>Real-time push notifications (WebSockets) for breaking news are not implemented.</li>
+</ul>
+
+<h2>19. Future Enhancements</h2>
+<ul>
+<li>Integration of an automated email newsletter trigger (NodeMailer) to send the Daily Digest to the user's inbox.</li>
+<li>Implementation of a Progressive Web App (PWA) for offline reading capabilities.</li>
+<li>Advanced keyword-based collaborative filtering for even better recommendations.</li>
+</ul>
+
+<h2>20. Expected Outcomes</h2>
+<ul>
+<li>Users will spend significantly less time sifting through clickbait and repetitive news by relying on concise, highly accurate AI summaries.</li>
+<li>The recommendation engine will demonstrate noticeable improvement in serving relevant content as the system continuously learns from user interactions (reading, liking, bookmarking).</li>
+<li>The platform will successfully bridge the language barrier, making global news accessible to regional audiences through accurate Tamil and Hindi AI translations.</li>
+<li>Overall user engagement and reading accessibility will increase due to the automated daily digest, analytics tracking, and intuitive Read-Aloud text-to-speech functionality.</li>
+</ul>
+
+<h2>21. Conclusion</h2>
+<p>The Personalized AI-Powered Daily News Digest successfully modernizes news consumption. By providing an intuitive, fast, and highly customized platform, it significantly reduces information overload while empowering users to consume global news efficiently in their preferred language.</p>
+
+<h2>22. References</h2>
+<ul>
+<li>Node.js Documentation</li>
+<li>Express.js Documentation</li>
+<li>Microsoft SQL Server Documentation</li>
+<li>Google Gemini API Documentation</li>
+<li>MDN Web Docs (HTML/CSS/JS)</li>
+</ul>
+</body>
+</html>

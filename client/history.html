@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - History</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .history-item { background: #fff; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .history-item a { text-decoration: none; color: #333; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav><a href="dashboard.html">Home</a></nav>
+    </header>
+    
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Reading History</h2>
+            <button class="btn btn-primary" style="background:#d9534f;" onclick="handleClear()">Clear History</button>
+        </div>
+        <div id="loader" class="loader">Loading...</div>
+        <div id="historyList"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!getToken()) window.location.href = 'login.html';
+
+        async function loadHistory() {
+            const res = await getHistory();
+            document.getElementById('loader').classList.add('hidden');
+            
+            const list = document.getElementById('historyList');
+            if (res.success && res.data.length > 0) {
+                list.innerHTML = '';
+                res.data.forEach(art => {
+                    list.innerHTML += `
+                        <div class="history-item">
+                            <div>
+                                <span style="color:#0077b6; font-size: 0.8rem;">${art.category}</span>
+                                <br>
+                                <a href="article.html?id=${art.id}">${art.title}</a>
+                                <p style="font-size:0.8rem; color:#777; margin-top:0.2rem;">Read at: ${new Date(art.read_at).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>No history available.</p>';
+            }
+        }
+
+        async function handleClear() {
+            if(confirm("Are you sure you want to clear your reading history?")) {
+                await clearHistory();
+                location.reload();
+            }
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>
+

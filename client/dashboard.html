@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .analytics-card { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .stat-box { text-align: center; padding: 1rem; background: #e0f7fa; border-radius: 8px; flex: 1; }
+        .stat-num { font-size: 2rem; font-weight: bold; color: #0077b6; }
+        .bar-container { display: flex; align-items: center; margin-bottom: 0.5rem; }
+        .bar-label { width: 120px; font-weight: bold; }
+        .bar-track { flex: 1; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; margin-right: 1rem; }
+        .bar-fill { height: 100%; background: #0077b6; }
+        .digest-section-title { font-size: 1.5rem; color: #0077b6; border-bottom: 2px solid #0077b6; display: inline-block; margin-bottom: 1rem; margin-top: 2rem;}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav>
+            <a href="dashboard.html">Home</a>
+            <a href="bookmarks.html">Bookmarks</a>
+            <a href="history.html">History</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <h2 id="welcomeMsg" style="margin-bottom: 1rem;">Good Morning!</h2>
+        
+        <div class="analytics-card" id="analyticsSection">
+            <h3 style="margin-bottom: 1rem;">📊 My Reading Insights</h3>
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                <div class="stat-box">
+                    <div class="stat-num" id="statRead">0</div>
+                    <div>Articles Read</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num" id="statBookmarks">0</div>
+                    <div>Bookmarks</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num" id="statLikes">0</div>
+                    <div>Likes</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num" id="statTopCat" style="font-size: 1.2rem; line-height: 2rem; overflow:hidden;">-</div>
+                    <div>Top Category</div>
+                </div>
+            </div>
+            
+            <h4 style="margin-bottom: 1rem;">Category Reading Chart</h4>
+            <div id="categoryChart"></div>
+        </div>
+        
+        <div style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <input type="text" id="searchInput" placeholder="Search news..." style="padding: 0.5rem; flex: 1;">
+            <button class="btn btn-primary" onclick="searchNews()">Search</button>
+        </div>
+
+        <div style="margin-bottom: 2rem; display: flex; gap: 0.5rem; overflow-x: auto;">
+            <button class="btn" onclick="loadNews('All')">All</button>
+            <button class="btn" onclick="loadNews('Technology')">Technology</button>
+            <button class="btn" onclick="loadNews('AI')">AI</button>
+            <button class="btn" onclick="loadNews('Business')">Business</button>
+            <button class="btn" onclick="loadNews('Sports')">Sports</button>
+        </div>
+
+        <h3 style="margin-bottom: 1rem; font-size:2rem;" id="sectionTitle">Today's Personalized Digest</h3>
+        <div id="loader" class="loader">Loading news...</div>
+        <div id="newsGrid"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!getToken()) window.location.href = 'login.html';
+
+        async function init() {
+            const profile = await getProfile();
+            if(profile.success) {
+                document.getElementById('welcomeMsg').innerText = `🌅 Good Morning, ${profile.data.name}!`;
+            }
+            loadAnalytics();
+            loadDigest();
+        }
+        
+        async function loadAnalytics() {
+            const [readRes, catRes] = await Promise.all([getReadingAnalytics(), getCategoryAnalytics()]);
+            if (readRes.success) {
+                document.getElementById('statRead').innerText = readRes.data.totalRead;
+                document.getElementById('statBookmarks').innerText = readRes.data.totalBookmarks;
+                document.getElementById('statLikes').innerText = readRes.data.totalLikes;
+                document.getElementById('statTopCat').innerText = readRes.data.mostReadCategory;
+            }
+            if (catRes.success) {
+                const chartContainer = document.getElementById('categoryChart');
+                chartContainer.innerHTML = '';
+                const maxCount = catRes.data.length > 0 ? catRes.data[0].count : 1;
+                catRes.data.slice(0, 5).forEach(c => {
+                    const pct = (c.count / maxCount) * 100;
+                    chartContainer.innerHTML += `
+                        <div class="bar-container">
+                            <div class="bar-label">${c.category}</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: ${pct}%;"></div>
+                            </div>
+                            <div>${c.count}</div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        async function loadDigest() {
+            document.getElementById('loader').classList.remove('hidden');
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = '';
+            document.getElementById('sectionTitle').innerText = "Today's Personalized Digest";
+            
+            const res = await getDigest();
+            document.getElementById('loader').classList.add('hidden');
+            
+            if (res.success && res.data) {
+                if(Array.isArray(res.data)) {
+                    // Fallback for old digest structure or search results
+                    grid.innerHTML = '<div class="card-grid" id="genericGrid"></div>';
+                    renderArticles(res.data, document.getElementById('genericGrid'));
+                } else {
+                    // New structured digest
+                    const { topStories, basedOnInterests, recommended, otherNews } = res.data;
+                    
+                    if (topStories && topStories.length > 0) {
+                        grid.innerHTML += `<h3 class="digest-section-title">🔥 Top Stories For You</h3><div class="card-grid" id="gridTop"></div>`;
+                        renderArticles(topStories, document.getElementById('gridTop'));
+                    }
+                    if (basedOnInterests && basedOnInterests.length > 0) {
+                        grid.innerHTML += `<h3 class="digest-section-title">💻 Based on Your Interests</h3><div class="card-grid" id="gridInt"></div>`;
+                        renderArticles(basedOnInterests, document.getElementById('gridInt'));
+                    }
+                    if (recommended && recommended.length > 0) {
+                        grid.innerHTML += `<h3 class="digest-section-title">🧠 Recommended For You</h3><div class="card-grid" id="gridRec"></div>`;
+                        renderArticles(recommended, document.getElementById('gridRec'));
+                    }
+                    if (otherNews && otherNews.length > 0) {
+                        grid.innerHTML += `<h3 class="digest-section-title">🌎 Other Important News</h3><div class="card-grid" id="gridOth"></div>`;
+                        renderArticles(otherNews, document.getElementById('gridOth'));
+                    }
+                }
+            } else {
+                grid.innerHTML = '<p>No digest available yet.</p>';
+            }
+        }
+
+        async function loadNews(category) {
+            document.getElementById('loader').classList.remove('hidden');
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = '<div class="card-grid" id="genericGrid"></div>';
+            document.getElementById('sectionTitle').innerText = `${category} News`;
+            
+            const res = await getNews(category);
+            document.getElementById('loader').classList.add('hidden');
+            
+            if (res.success) renderArticles(res.data, document.getElementById('genericGrid'));
+        }
+        
+        async function searchNews() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+            document.getElementById('loader').classList.remove('hidden');
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = '<div class="card-grid" id="genericGrid"></div>';
+            document.getElementById('sectionTitle').innerText = `Search Results for "${query}"`;
+            
+            const res = await getNews('', query);
+            document.getElementById('loader').classList.add('hidden');
+            if (res.success) renderArticles(res.data, document.getElementById('genericGrid'));
+        }
+
+        function renderArticles(articles, container) {
+            container.innerHTML = '';
+            articles.forEach(art => {
+                // Determine if article has new AI fields (from digest) or fallback to basic summary
+                let contentHTML = `<p class="card-text">${art.summary || art.description || 'No description available.'}</p>`;
+                if(art.takeaways && art.takeaways.length > 0) {
+                    contentHTML += `<ul style="font-size:0.8rem; margin:0.5rem 0; padding-left:1rem; color:#444;">
+                        ${art.takeaways.slice(0,2).map(t => `<li>${t}</li>`).join('')}
+                    </ul>`;
+                }
+                
+                container.innerHTML += `
+                    <div class="card">
+                        <img src="${art.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="News">
+                        <div class="card-body">
+                            <span style="font-size: 0.8rem; color: #0077b6;">${art.category || 'General'}</span>
+                            <h4 class="card-title" style="margin-bottom:0.2rem;">${art.title}</h4>
+                            <p style="font-size:0.7rem; color:#888; margin-bottom:0.5rem;">${art.source} | ${new Date(art.published_at).toLocaleDateString()}</p>
+                            ${contentHTML}
+                            ${art.reason ? `<p style="font-size:0.8rem;color:green;margin-top:0.5rem;">⭐ ${art.reason}</p>` : ''}
+                        </div>
+                        <div class="card-footer">
+                            <button onclick="handleLike(${art.id})">👍 Like</button>
+                            <button onclick="handleBookmark(${art.id})">🔖 Save</button>
+                            <a href="article.html?id=${art.id}" class="btn btn-primary" style="text-decoration:none;font-size:0.8rem;">Read More</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function handleLike(id) {
+            await likeArticle(id);
+            alert('Article liked!');
+        }
+        async function handleBookmark(id) {
+            await addBookmark(id);
+            alert('Article saved!');
+        }
+
+        init();
+    </script>
+</body>
+</html>
+

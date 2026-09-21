@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - Profile</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav><a href="dashboard.html">Home</a></nav>
+    </header>
+    
+    <div class="container" style="max-width: 600px;">
+        <div style="background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2>Profile</h2>
+            <div id="loader" class="loader">Loading...</div>
+            <div id="profileContent" class="hidden">
+                <p><strong>Name:</strong> <span id="pName"></span></p>
+                <p><strong>Email:</strong> <span id="pEmail"></span></p>
+                
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Your Interests</h3>
+                <div id="interests" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1.5rem;"></div>
+                
+                <h4>Update Interests</h4>
+                <div style="margin-top:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;" id="catSelects">
+                    <!-- categories will be populated here -->
+                </div>
+                <h4 style="margin-top: 2rem;">Preferred Summary Language</h4>
+                <select id="prefLangSelect" style="padding:0.5rem; margin-top:0.5rem;">
+                    <option value="en">English</option>
+                    <option value="ta">Tamil</option>
+                    <option value="hi">Hindi</option>
+                </select>
+                
+                <br>
+                <button class="btn btn-primary" style="margin-top: 1rem;" onclick="saveProfileSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!getToken()) window.location.href = 'login.html';
+        
+        const allCategories = ['Technology', 'AI', 'Business', 'Education', 'Sports', 'Science', 'Health', 'Entertainment', 'Politics', 'World', 'India', 'Finance', 'Kpop', 'Music', 'Fashion Runway', 'Drama', 'Series', 'Movies'];
+        let userInterests = [];
+
+        async function loadProfile() {
+            const res = await getProfile();
+            document.getElementById('loader').classList.add('hidden');
+            
+            if (res.success) {
+                document.getElementById('profileContent').classList.remove('hidden');
+                document.getElementById('pName').innerText = res.data.name;
+                document.getElementById('pEmail').innerText = res.data.email;
+                if(res.data.preferred_language) {
+                    document.getElementById('prefLangSelect').value = res.data.preferred_language;
+                }
+                userInterests = res.data.interests || [];
+                renderInterests();
+                renderCategorySelectors();
+            }
+        }
+
+        function renderInterests() {
+            const container = document.getElementById('interests');
+            container.innerHTML = '';
+            if (userInterests.length === 0) {
+                container.innerHTML = '<span>No interests selected.</span>';
+                return;
+            }
+            userInterests.forEach(i => {
+                container.innerHTML += `<span style="background:#0077b6; color:#fff; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.9rem;">${i}</span>`;
+            });
+        }
+        
+        function renderCategorySelectors() {
+            const container = document.getElementById('catSelects');
+            container.innerHTML = '';
+            allCategories.forEach(cat => {
+                const checked = userInterests.includes(cat) ? 'checked' : '';
+                container.innerHTML += `
+                    <label style="display:flex; align-items:center; gap:0.2rem;">
+                        <input type="checkbox" value="${cat}" class="cat-checkbox" ${checked}> ${cat}
+                    </label>
+                `;
+            });
+        }
+        
+        async function saveProfileSettings() {
+            const checkboxes = document.querySelectorAll('.cat-checkbox:checked');
+            const selected = Array.from(checkboxes).map(c => c.value);
+            const lang = document.getElementById('prefLangSelect').value;
+            
+            const [resPref, resLang] = await Promise.all([
+                updatePreferences(selected),
+                updateProfileLanguage(lang)
+            ]);
+            
+            if(resPref.success && resLang.success) {
+                alert('Settings updated successfully!');
+                location.reload();
+            } else {
+                alert('Error updating settings.');
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - Bookmarks</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav>
+            <a href="dashboard.html">Home</a>
+            <a href="profile.html">Profile</a>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <h2>Your Saved Articles</h2>
+        <div id="loader" class="loader">Loading...</div>
+        <div id="newsGrid" class="card-grid" style="margin-top:2rem;"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!getToken()) window.location.href = 'login.html';
+
+        async function loadBookmarks() {
+            const res = await getBookmarks();
+            document.getElementById('loader').classList.add('hidden');
+            
+            const grid = document.getElementById('newsGrid');
+            if (res.success && res.data.length > 0) {
+                grid.innerHTML = '';
+                res.data.forEach(art => {
+                    grid.innerHTML += `
+                        <div class="card">
+                            <img src="${art.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="News">
+                            <div class="card-body">
+                                <h4 class="card-title">${art.title}</h4>
+                            </div>
+                            <div class="card-footer">
+                                <button onclick="handleRemove(${art.id})">❌ Remove</button>
+                                <a href="article.html?id=${art.id}" class="btn btn-primary" style="text-decoration:none;font-size:0.8rem;">Read More</a>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                grid.innerHTML = '<p>No saved articles yet.</p>';
+            }
+        }
+
+        async function handleRemove(id) {
+            await removeBookmark(id);
+            location.reload();
+        }
+
+        loadBookmarks();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyDigest AI - Article</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>DailyDigest AI</h1>
+        <nav><a href="dashboard.html">Back to Dashboard</a></nav>
+    </header>
+    
+    <div class="container" style="max-width: 800px;">
+        <div id="loader" class="loader">Generating AI insights...</div>
+        <div id="articleContent" class="hidden" style="background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <a href="dashboard.html" style="text-decoration:none; color:#0077b6;">← Back</a>
+            <div style="margin-top:1rem;">
+                <span id="aCategory" style="background: #e0f7fa; color: #0077b6; padding:0.2rem 0.5rem; border-radius:4px; font-weight: bold; font-size:0.8rem;"></span>
+            </div>
+            <h2 id="aTitle" style="margin: 0.5rem 0 0.5rem;"></h2>
+            <p style="color: #777; margin-bottom: 1rem;"><span id="aSource"></span> | <span id="aDate"></span></p>
+            
+            <img id="aImage" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; margin-bottom: 2rem;">
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1rem 0;">
+            <h3 style="margin-bottom: 1rem; color:#0077b6;">🤖 AI SUMMARY</h3>
+            <p id="aSummary" style="font-size: 1.1rem; line-height: 1.6;"></p>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1.5rem 0;">
+            <h3 style="margin-bottom: 1rem; color:#0077b6;">📌 KEY TAKEAWAYS</h3>
+            <ul id="aTakeaways" style="padding-left:1.5rem; line-height: 1.6;"></ul>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1.5rem 0;">
+            <h3 style="margin-bottom: 1rem; color:#0077b6;">💡 WHY THIS MATTERS</h3>
+            <p id="aInsight" style="font-size: 1.1rem; line-height: 1.6;"></p>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1.5rem 0;">
+            <h3 style="margin-bottom: 1rem; color:#0077b6;">🔊 READ ALOUD</h3>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="btn" onclick="playSpeech()">▶ Play</button>
+                <button class="btn" onclick="pauseSpeech()">⏸ Pause</button>
+                <button class="btn" onclick="resumeSpeech()">▶ Resume</button>
+                <button class="btn" onclick="stopSpeech()">⏹ Stop</button>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1.5rem 0;">
+            <h3 style="margin-bottom: 1rem; color:#0077b6;">🌐 SUMMARY LANGUAGE</h3>
+            <select id="langSelect" onchange="changeLanguage()" style="padding:0.5rem;">
+                <option value="en">English</option>
+                <option value="ta">Tamil</option>
+                <option value="hi">Hindi</option>
+            </select>
+            <span id="transLoader" class="hidden" style="margin-left:1rem; color:#777;">Translating...</span>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:1.5rem 0;">
+            <div style="display:flex; gap:1rem; align-items:center;">
+                <button class="btn btn-primary" onclick="handleLike()" id="likeBtn">❤️ Like</button>
+                <button class="btn btn-primary" onclick="handleBookmark()">🔖 Bookmark</button>
+                <a id="aLink" href="#" target="_blank" class="btn btn-primary" style="text-decoration:none; background:#28a745;">🔗 Read Full Article</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!getToken()) window.location.href = 'login.html';
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('id');
+        let currentSpeech = null;
+        let isPlaying = false;
+        
+        let loadedTitle = "";
+        let loadedSummary = "";
+        let loadedTakeaways = [];
+        let loadedInsight = "";
+
+        async function loadArticle() {
+            if(!articleId) return;
+            await addHistory(articleId);
+            
+            // fetch profile language
+            const profile = await getProfile();
+            if(profile.success && profile.data.preferred_language) {
+                document.getElementById('langSelect').value = profile.data.preferred_language;
+            }
+
+            const res = await getArticle(articleId);
+            document.getElementById('loader').classList.add('hidden');
+            
+            if (res.success) {
+                const a = res.data;
+                document.getElementById('articleContent').classList.remove('hidden');
+                document.getElementById('aImage').src = a.image_url || 'https://via.placeholder.com/800x400?text=No+Image';
+                document.getElementById('aCategory').innerText = a.category || 'General';
+                document.getElementById('aTitle').innerText = a.title;
+                document.getElementById('aSource').innerText = a.source;
+                document.getElementById('aDate').innerText = new Date(a.published_at).toLocaleDateString();
+                document.getElementById('aLink').href = a.url;
+                
+                loadedTitle = a.title;
+                loadedSummary = a.summary;
+                loadedTakeaways = a.takeaways || [];
+                loadedInsight = a.insight || "";
+                
+                renderTextContent(loadedSummary, loadedTakeaways, loadedInsight);
+                
+                if (document.getElementById('langSelect').value !== 'en') {
+                    changeLanguage();
+                }
+            }
+        }
+        
+        function renderTextContent(summary, takeaways, insight) {
+            document.getElementById('aSummary').innerText = summary;
+            const ul = document.getElementById('aTakeaways');
+            ul.innerHTML = '';
+            takeaways.forEach(t => {
+                ul.innerHTML += `<li>${t}</li>`;
+            });
+            document.getElementById('aInsight').innerText = insight;
+        }
+
+        async function changeLanguage() {
+            const lang = document.getElementById('langSelect').value;
+            if (lang === 'en') {
+                renderTextContent(loadedSummary, loadedTakeaways, loadedInsight);
+                return;
+            }
+            
+            document.getElementById('transLoader').classList.remove('hidden');
+            const res = await getTranslation(articleId, lang);
+            document.getElementById('transLoader').classList.add('hidden');
+            
+            if (res.success) {
+                renderTextContent(res.data.summary, res.data.takeaways, res.data.insight);
+            }
+        }
+        
+        function getSpeechText() {
+            const sum = document.getElementById('aSummary').innerText;
+            const tk = Array.from(document.getElementById('aTakeaways').children).map(li => li.innerText).join('. ');
+            const ins = document.getElementById('aInsight').innerText;
+            return `${loadedTitle}. AI Summary: ${sum}. Key Takeaways: ${tk}. Why this matters: ${ins}`;
+        }
+
+        function playSpeech() {
+            if (!('speechSynthesis' in window)) return alert('Read Aloud is not supported in this browser.');
+            stopSpeech();
+            const text = getSpeechText();
+            currentSpeech = new SpeechSynthesisUtterance(text);
+            const lang = document.getElementById('langSelect').value;
+            if (lang === 'ta') currentSpeech.lang = 'ta-IN';
+            else if (lang === 'hi') currentSpeech.lang = 'hi-IN';
+            else currentSpeech.lang = 'en-US';
+            
+            window.speechSynthesis.speak(currentSpeech);
+        }
+        function pauseSpeech() { window.speechSynthesis.pause(); }
+        function resumeSpeech() { window.speechSynthesis.resume(); }
+        function stopSpeech() { window.speechSynthesis.cancel(); }
+
+        async function handleLike() {
+            await likeArticle(articleId);
+            alert('Article liked!');
+        }
+        async function handleBookmark() {
+            await addBookmark(articleId);
+            alert('Article saved!');
+        }
+        
+        loadArticle();
+    </script>
+</body>
+</html>
+
